@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BigQuery Release Hub</title>
+    <meta name="description" content="Stay updated with the latest Google BigQuery features, announcements, deprecations, and issue fixes. Select updates and tweet them instantly.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="background-glows">
+        <div class="glow glow-1"></div>
+        <div class="glow glow-2"></div>
+        <div class="glow glow-3"></div>
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar / Navigation -->
+        <header class="header">
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2005/svg">
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="url(#logoGrad)" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                        <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <defs>
+                            <linearGradient id="logoGrad" x1="2" y1="2" x2="22" y2="12" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#4285F4"/>
+                                <stop offset="1" stop-color="#34A853"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <h1>BigQuery</h1>
+                    <span>Release Hub</span>
+                </div>
+            </div>
+            
+            <div class="status-controls">
+                <span class="last-updated-text" id="last-updated">Last checked: Never</span>
+                <button class="btn btn-primary" id="btn-refresh" title="Refresh Release Notes">
+                    <i data-lucide="refresh-cw" id="refresh-icon"></i>
+                    <span>Refresh</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Dashboard -->
+        <section class="dashboard-stats">
+            <div class="stat-card" data-filter="all">
+                <div class="stat-icon-wrapper blue">
+                    <i data-lucide="layers"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="stat-total">0</h3>
+                    <p>Total Updates</p>
+                </div>
+            </div>
+            <div class="stat-card" data-filter="feature">
+                <div class="stat-icon-wrapper green">
+                    <i data-lucide="zap"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="stat-features">0</h3>
+                    <p>Features</p>
+                </div>
+            </div>
+            <div class="stat-card" data-filter="announcement">
+                <div class="stat-icon-wrapper purple">
+                    <i data-lucide="megaphone"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="stat-announcements">0</h3>
+                    <p>Announcements</p>
+                </div>
+            </div>
+            <div class="stat-card" data-filter="issue">
+                <div class="stat-icon-wrapper orange">
+                    <i data-lucide="alert-triangle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="stat-issues">0</h3>
+                    <p>Issues & Fixes</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Filter Bar -->
+        <section class="filter-bar">
+            <div class="search-box">
+                <i data-lucide="search" class="search-icon"></i>
+                <input type="text" id="search-input" placeholder="Search updates (e.g. Gemini, GA, Alter Table)...">
+                <button class="clear-search" id="clear-search-btn" title="Clear Search">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="filter-options">
+                <div class="filter-group">
+                    <button class="filter-btn active" data-type="all">All</button>
+                    <button class="filter-btn" data-type="feature"><span class="badge feature"></span>Features</button>
+                    <button class="filter-btn" data-type="announcement"><span class="badge announcement"></span>Announcements</button>
+                    <button class="filter-btn" data-type="issue"><span class="badge issue"></span>Issues</button>
+                    <button class="filter-btn" data-type="deprecation"><span class="badge deprecation"></span>Deprecations</button>
+                </div>
+                <div class="sort-group">
+                    <button class="sort-btn" id="btn-sort" data-order="desc" title="Sort Order">
+                        <i data-lucide="arrow-down-narrow-wide"></i>
+                        <span>Newest First</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Content Area -->
+        <main class="feed-section">
+            <!-- Loader -->
+            <div class="loader-container" id="feed-loader">
+                <div class="custom-spinner"></div>
+                <p>Fetching BigQuery release notes...</p>
+            </div>
+
+            <!-- Error Banner -->
+            <div class="error-container hidden" id="error-banner">
+                <div class="error-icon">
+                    <i data-lucide="wifi-off"></i>
+                </div>
+                <div class="error-msg">
+                    <h3>Failed to load release notes</h3>
+                    <p id="error-details">Please check your network connection and try again.</p>
+                </div>
+                <button class="btn btn-secondary" id="btn-retry">Retry Fetch</button>
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-container hidden" id="empty-state">
+                <i data-lucide="folder-open" class="empty-icon"></i>
+                <h3>No updates match your filters</h3>
+                <p>Try refining your search keyword or selecting a different category.</p>
+                <button class="btn btn-secondary" id="btn-reset-filters">Reset Filters</button>
+            </div>
+
+            <!-- Feed Timeline -->
+            <div class="timeline-container hidden" id="timeline">
+                <!-- Timeline items will be rendered dynamically -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Tweet Modal -->
+    <div class="modal-overlay hidden" id="tweet-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i data-lucide="twitter" class="x-logo"></i>
+                    <h2>Compose Update Post</h2>
+                </div>
+                <button class="modal-close" id="btn-close-modal" title="Close">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Selected Note Details -->
+                <div class="original-snippet-preview">
+                    <span class="tag-badge" id="modal-note-type">Feature</span>
+                    <span class="note-date" id="modal-note-date">June 17, 2026</span>
+                    <div class="note-summary" id="modal-note-preview-text">
+                        Loading snippet...
+                    </div>
+                </div>
+
+                <!-- Text Compose Box -->
+                <div class="composer-container">
+                    <label for="tweet-text">Your Post</label>
+                    <textarea id="tweet-text" rows="5" maxlength="280" placeholder="What's happening?"></textarea>
+                    
+                    <div class="composer-meta">
+                        <div class="quick-tags">
+                            <button class="quick-tag-btn" data-tag="#BigQuery">#BigQuery</button>
+                            <button class="quick-tag-btn" data-tag="#GoogleCloud">#GoogleCloud</button>
+                            <button class="quick-tag-btn" data-tag="#DataAnalytics">#DataAnalytics</button>
+                        </div>
+                        <div class="char-counter">
+                            <span id="char-count">0</span>/280
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Preview Card (X UI mockup) -->
+                <div class="live-preview-section">
+                    <span class="preview-label">Live Preview on X</span>
+                    <div class="x-card-mockup">
+                        <div class="x-card-avatar">BQ</div>
+                        <div class="x-card-content">
+                            <div class="x-card-author">
+                                <span class="x-author-name">BigQuery Releases</span>
+                                <span class="x-author-handle">@BigQueryRelease · Just now</span>
+                            </div>
+                            <p class="x-card-text" id="x-preview-text">Preview text goes here...</p>
+                            <div class="x-card-actions">
+                                <span><i data-lucide="message-circle"></i> 0</span>
+                                <span><i data-lucide="repeat"></i> 0</span>
+                                <span><i data-lucide="heart"></i> 0</span>
+                                <span><i data-lucide="share"></i></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="btn-cancel-tweet">Cancel</button>
+                <button class="btn btn-x" id="btn-submit-tweet">
+                    <svg class="x-bird-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2005/svg">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    <span>Post to X</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script -->
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
